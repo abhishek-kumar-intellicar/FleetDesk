@@ -1,6 +1,34 @@
+import { useLayoutEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { APP_NAME, APP_TAGLINE } from "@/lib/branding";
-import { customers } from "@/lib/routes";
+import { useDispatch } from "react-redux";
+import { APP_NAME, APP_TAGLINE } from "@/constants/branding";
+import { Loader } from "@/components/ui";
+import { usePostApi } from "@/hooks/usePostApi";
+import type { AppDispatch } from "@/store";
+import { setUser, type SigninResponse } from "@/store/userSlice";
+
+const generateCodeVerifier = (length = 128) => {
+  const charset =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+  let result = "";
+  const values = crypto.getRandomValues(new Uint8Array(length));
+  values.forEach((v) => (result += charset[v % charset.length]));
+  return result;
+};
+
+const base64UrlEncode = (buffer: ArrayBuffer) => {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+};
+
+const generateCodeChallenge = async (verifier: string) => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return base64UrlEncode(digest);
+};
 
 function GoogleIcon() {
   return (
@@ -27,6 +55,93 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const CLIENT_ID =
+    "864557358753-opr9onjt1tve2hmgfuqtjgivjflua1lo.apps.googleusercontent.com";
+
+  const REDIRECT_URI = "https://tatatmlcv.intellicar.io/login";
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const codeVerifier = generateCodeVerifier();
+      const codeChallenge = await generateCodeChallenge(codeVerifier);
+      localStorage.setItem("code_verifier", codeVerifier);
+      const authUrl =
+        "https://accounts.google.com/o/oauth2/v2/auth?" +
+        new URLSearchParams({
+          client_id: CLIENT_ID,
+          redirect_uri: REDIRECT_URI,
+          response_type: "code",
+          scope: "openid email profile",
+          code_challenge: codeChallenge,
+          code_challenge_method: "S256",
+          access_type: "offline",
+          prompt: "consent",
+        });
+
+      window.location.href = authUrl;
+    } catch (err) {
+      console.error("Google login init failed:", err);
+      setLoading(false);
+    }
+  };
+
+  const { action, loading: loginLoading } = usePostApi<
+    { code: string; codeVerifier: string },
+    SigninResponse
+  >(
+    {
+      path: "https://tatatmlcv.intellicar.io/api/v1/login/gsso/signin",
+      onSuccess: (data) => {
+        if (data?.data?.userprofile) {
+          dispatch(setUser(data.data.userprofile));
+          navigate("/", { replace: true });
+          setLoading(false);
+        } else {
+          navigate("/login", { replace: true });
+          setLoading(false);
+        }
+      },
+      onError: (err) => {
+        console.error("Google login error:", err);
+        setLoading(false);
+        navigate("/login", { replace: true });
+      },
+    },
+  );
+
+  useLayoutEffect(() => {
+    if (localStorage.getItem("code_verifier")) {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const error = params.get("error");
+
+      if (error) {
+        console.error("Google OAuth Error:", error);
+        setLoading(false);
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      const codeVerifier = localStorage.getItem("code_verifier");
+
+      if (!code || !codeVerifier) {
+        console.error("Missing code or code_verifier");
+        setLoading(false);
+        navigate("/login", { replace: true });
+        return;
+      }
+      setLoading(true);
+      action({ code, codeVerifier });
+      localStorage.removeItem("code_verifier");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const isLoading = loading || loginLoading;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12">
@@ -39,14 +154,18 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-slate-500">{APP_TAGLINE}</p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigate(customers.dashboard)}
-          className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
-        >
-          <GoogleIcon />
-          Continue with Google
-        </button>
+        {isLoading ? (
+          <Loader label="Signing in…" />
+        ) : (
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </button>
+        )}
       </div>
     </div>
   );

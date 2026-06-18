@@ -1,25 +1,30 @@
+import { useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { formatINR } from "@/lib/format";
 import { customers } from "@/lib/routes";
-import { queryKeys } from "@/lib/query-keys";
 import { PageHeader, StatusBadge, TierBadge } from "@/components/ui";
-import { apiPost } from "@/clients/axios";
-import type { ClientListResponse } from "@/lib/api-types";
+import { usePostApi } from "@/hooks/usePostApi";
+import type { ClientListParams, ClientListResponse } from "@/types/api";
 
 export default function ClientsPage() {
   const [searchParams] = useSearchParams();
   const q = searchParams.get("q") ?? undefined;
   const status = searchParams.get("status") ?? undefined;
 
-  const { data: listResult, isLoading } = useQuery({
-    queryKey: queryKeys.clients({ q, status }),
-    queryFn: () =>
-      apiPost<ClientListResponse>("client/list", {
-        q: q?.trim() || undefined,
-        status: status || undefined,
-      }),
+  const {
+    action: fetchClients,
+    loading: isLoading,
+    data: listResult,
+  } = usePostApi<ClientListParams, ClientListResponse>({
+    path: "client/list",
   });
+
+  useEffect(() => {
+    fetchClients({
+      q: q?.trim() || undefined,
+      status: status || undefined,
+    });
+  }, [q, status, fetchClients]);
 
   const clients = listResult?.data.data ?? [];
   const total = listResult?.data.total ?? 0;
@@ -152,7 +157,7 @@ export default function ClientsPage() {
                       : "—"}
                   </td>
                   <td className="px-5 py-3 text-right font-medium tabular-nums text-slate-800">
-                    {c.mrr > 0 ? formatINR(c.mrr, true) : "—"}
+                    {formatINR(Number(c.mrr ?? 0), true)}
                   </td>
                 </tr>
               ))}

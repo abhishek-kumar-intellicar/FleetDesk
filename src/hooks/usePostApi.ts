@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiPost } from "../clients/axios";
 
@@ -29,8 +30,13 @@ export function usePostApi<TData = unknown, TResponse = unknown>({
     },
   });
 
+  const action = useCallback(
+    (data?: TData) => mutation.mutate(data),
+    [mutation.mutate],
+  );
+
   return {
-    action: (data?: TData) => mutation.mutate(data),
+    action,
     loading: mutation.isPending,
     data: mutation.data as TResponse | undefined,
     error: mutation.error as Error | null,

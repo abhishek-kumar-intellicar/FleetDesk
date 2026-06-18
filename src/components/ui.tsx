@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement } from "react";
-import { STAGE_LABELS, DEVICE_LABELS } from "@/lib/format";
+import { STAGE_LABELS } from "@/constants/deals";
+import { DEVICE_LABELS } from "@/constants/devices";
 
 export function FormField({
   label,
@@ -135,5 +136,18 @@ export function DeviceTypeBadge({ type }: { type: string }) {
     <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
       {DEVICE_LABELS[type] ?? type}
     </span>
+  );
+}
+
+export function Loader({ label }: { label?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-6">
+      <div
+        className="h-6 w-6 animate-spin rounded-full border-2 border-slate-200 border-t-brand-600"
+        role="status"
+        aria-label={label ?? "Loading"}
+      />
+      {label && <p className="text-sm text-slate-400">{label}</p>}
+    </div>
   );
 }

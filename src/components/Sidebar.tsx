@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { APP_BADGE, APP_NAME, APP_TAGLINE } from "@/lib/branding";
+import { APP_BADGE, APP_NAME, APP_TAGLINE } from "@/constants/branding";
 import { customers } from "@/lib/routes";
 
 const DUMMY_USER = {

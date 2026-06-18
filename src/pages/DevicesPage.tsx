@@ -1,11 +1,12 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listDevices, setDeviceStatus } from "@/lib/db";
-import { relativeTime, DEVICE_LABELS } from "@/lib/format";
+import { relativeTime } from "@/lib/format";
+import { DEVICE_LABELS } from "@/constants/devices";
 import { queryKeys } from "@/lib/query-keys";
 import { customers } from "@/lib/routes";
 import { PageHeader, DeviceTypeBadge } from "@/components/ui";
-import type { DeviceStatus } from "@/lib/types";
+import type { DeviceStatus } from "@/types";
 
 export default function DevicesPage() {
   const [searchParams] = useSearchParams();

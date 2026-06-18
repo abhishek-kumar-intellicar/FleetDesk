@@ -1,155 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
-import * as Yup from "yup";
 import { customers } from "@/lib/routes";
 import { errorToast, successToast } from "@/lib/toast";
 import { FormField, PageHeader } from "@/components/ui";
 import { usePostApi } from "@/hooks/usePostApi";
-
-type FormValues = {
-  name: string;
-  legalName: string;
-  industry: string;
-  website: string;
-  city: string;
-  state: string;
-  pincode: string;
-  gstin: string;
-  status: string;
-  tier: string;
-  fleetSize: string;
-  mrr: string;
-  leadSource: string;
-  renewalAt: string;
-  assignedToId: string;
-  notes: string;
-  contactName: string;
-  contactRole: string;
-  contactEmail: string;
-  contactPhone: string;
-};
-
-type CreateClientPayload = {
-  name: string;
-  legalName: string;
-  industry: string;
-  status: string;
-  tier: string;
-  city: string;
-  state: string;
-  pincode: string;
-  fleetSize: number;
-  mrr: number;
-  website: string;
-  gstin: string;
-  leadSource?: string;
-  renewalAt?: number;
-  assignedToId?: string;
-  notes?: string;
-  primaryContact?: {
-    name: string;
-    role: string;
-    email: string;
-    phone: string;
-  };
-};
-
-function buildCreateClientPayload(values: FormValues): CreateClientPayload {
-  const payload: CreateClientPayload = {
-    name: values.name.trim(),
-    legalName: values.legalName.trim(),
-    industry: values.industry.trim(),
-    status: values.status || "lead",
-    tier: values.tier || "standard",
-    city: values.city.trim(),
-    state: values.state.trim(),
-    pincode: values.pincode.trim(),
-    gstin: values.gstin.trim().toUpperCase(),
-    fleetSize: values.fleetSize ? Number(values.fleetSize) : 0,
-    mrr: values.mrr ? Number(values.mrr) : 0,
-    website: values.website.trim(),
-  };
-
-  const leadSource = values.leadSource.trim();
-  if (leadSource) payload.leadSource = leadSource;
-
-  const assignedToId = values.assignedToId.trim();
-  if (assignedToId) payload.assignedToId = assignedToId;
-
-  const notes = values.notes.trim();
-  if (notes) payload.notes = notes;
-
-  if (values.renewalAt) {
-    payload.renewalAt = new Date(values.renewalAt).getTime();
-  }
-
-  if (hasContactInput(values)) {
-    payload.primaryContact = {
-      name: values.contactName.trim(),
-      role: values.contactRole.trim(),
-      email: values.contactEmail.trim(),
-      phone: values.contactPhone.trim(),
-    };
-  }
-
-  return payload;
-}
-
-type ContactValues = Pick<
-  FormValues,
-  "contactName" | "contactRole" | "contactEmail" | "contactPhone"
->;
-
-function hasContactInput(values: ContactValues) {
-  return [
-    values.contactName,
-    values.contactRole,
-    values.contactEmail,
-    values.contactPhone,
-  ].some((value) => String(value ?? "").trim() !== "");
-}
-
-function requiredWhenContactStarted(message: string) {
-  return Yup.string().test("contact-group", message, function (value) {
-    if (!hasContactInput(this.parent)) return true;
-    return String(value ?? "").trim() !== "";
-  });
-}
-
-const validationSchema = Yup.object().shape({
-  name: Yup.string().trim().required("Company name is required"),
-  legalName: Yup.string().trim().required("Legal name is required"),
-  industry: Yup.string().trim().required("Industry is required"),
-  website: Yup.string()
-    .trim()
-    .url("Invalid website URL")
-    .required("Website is required"),
-  city: Yup.string().trim().required("City is required"),
-  state: Yup.string().trim().required("State is required"),
-  pincode: Yup.string()
-    .trim()
-    .required("Pincode is required")
-    .matches(/^\d{6}$/, "Pincode must be 6 digits"),
-  gstin: Yup.string()
-    .trim()
-    .transform((value) => value?.toUpperCase())
-    .required("GSTIN is required")
-    .matches(
-      /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/,
-      "Invalid GSTIN format",
-    ),
-  // status: Yup.string().required("Status is required"),
-  // tier: Yup.string().required("Tier is required"),
-  // fleetSize: Yup.number().required("Fleet size is required"),
-  // mrr: Yup.number().required("MRR is required"),
-  // notes: Yup.string().required("Notes are required"),
-  // contactName: requiredWhenContactStarted("Contact name is required"),
-  // contactRole: requiredWhenContactStarted("Contact role is required"),
-  // contactEmail: requiredWhenContactStarted("Contact email is required").email(
-  //   "Invalid email",
-  // ),
-  // contactPhone: requiredWhenContactStarted("Contact phone is required"),
-});
+import { buildCreateClientPayload } from "@/constants/createClient/build-payload";
+import { CREATE_CLIENT_INITIAL_VALUES } from "@/constants/createClient/initial-values";
+import { createClientValidationSchema } from "@/constants/createClient/validation";
+import type {
+  CreateClientFormValues,
+  CreateClientPayload,
+} from "@/types/createClient";
 
 export default function NewClientPage() {
   const navigate = useNavigate();
@@ -161,49 +22,20 @@ export default function NewClientPage() {
     onSuccess: () => {
       successToast("Client created successfully");
       navigate(customers.clients);
-      // router.refresh();
     },
     onError: (error) => {
       errorToast(error.message || "Failed to create client");
     },
   });
 
-  const {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    handleSubmit,
-    isSubmitting,
-  } = useFormik<FormValues>({
-    initialValues: {
-      name: "",
-      legalName: "",
-      industry: "",
-      website: "",
-      city: "",
-      state: "",
-      pincode: "",
-      gstin: "",
-      status: "",
-      tier: "",
-      fleetSize: "",
-      mrr: "",
-      leadSource: "",
-      renewalAt: "",
-      assignedToId: "",
-      notes: "",
-      contactName: "",
-      contactRole: "",
-      contactEmail: "",
-      contactPhone: "",
-    },
-    validationSchema,
-    onSubmit: (formValues) => {
-      createClient(buildCreateClientPayload(formValues));
-    },
-  });
+  const { values, errors, touched, handleChange, handleBlur, handleSubmit } =
+    useFormik<CreateClientFormValues>({
+      initialValues: CREATE_CLIENT_INITIAL_VALUES,
+      validationSchema: createClientValidationSchema,
+      onSubmit: (formValues) => {
+        createClient(buildCreateClientPayload(formValues));
+      },
+    });
 
   return (
     <div>
@@ -555,7 +387,7 @@ export default function NewClientPage() {
             <button
               type="submit"
               className="btn-primary"
-              // disabled={isSubmitting || createClientLoading}
+              disabled={createClientLoading}
             >
               Create client
             </button>

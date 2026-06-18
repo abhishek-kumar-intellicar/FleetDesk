@@ -1,11 +1,12 @@
 import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listDeals, setDealStage } from "@/lib/db";
-import { formatINR, formatDate, STAGES, STAGE_LABELS } from "@/lib/format";
+import { formatINR, formatDate } from "@/lib/format";
+import { STAGES, STAGE_LABELS } from "@/constants/deals";
 import { queryKeys } from "@/lib/query-keys";
 import { customers } from "@/lib/routes";
 import { PageHeader } from "@/components/ui";
-import type { DealStage } from "@/lib/types";
+import type { DealStage } from "@/types";
 
 const COLUMN_ACCENT: Record<string, string> = {
   prospect: "border-t-slate-400",

@@ -7,7 +7,7 @@ import type {
   Deal,
   Device,
   WithClient,
-} from "./types";
+} from "@/types";
 
 const STORAGE_KEY = "fleetdesk-db";
 

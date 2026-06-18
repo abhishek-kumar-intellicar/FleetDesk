@@ -34,29 +34,3 @@ export function relativeTime(date: Date | string | null | undefined): string {
   const days = Math.round(hours / 24);
   return `${days}d ago`;
 }
-
-export const STAGES = [
-  "prospect",
-  "qualified",
-  "proposal",
-  "negotiation",
-  "won",
-  "lost",
-] as const;
-
-export const STAGE_LABELS: Record<string, string> = {
-  prospect: "Prospect",
-  qualified: "Qualified",
-  proposal: "Proposal",
-  negotiation: "Negotiation",
-  won: "Won",
-  lost: "Lost",
-};
-
-export const DEVICE_LABELS: Record<string, string> = {
-  gps: "GPS Tracker",
-  obd: "OBD-II",
-  fuel: "Fuel Sensor",
-  dashcam: "Dashcam",
-  temperature: "Temp Sensor",
-};
