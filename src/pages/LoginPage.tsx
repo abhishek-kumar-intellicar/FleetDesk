@@ -58,10 +58,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
 
-  const CLIENT_ID =
-    "864557358753-opr9onjt1tve2hmgfuqtjgivjflua1lo.apps.googleusercontent.com";
+  const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-  const REDIRECT_URI = "https://tatatmlcv.intellicar.io/login";
+  const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI;
 
   const handleGoogleLogin = async () => {
     try {
@@ -92,26 +91,24 @@ export default function LoginPage() {
   const { action, loading: loginLoading } = usePostApi<
     { code: string; codeVerifier: string },
     SigninResponse
-  >(
-    {
-      path: "https://tatatmlcv.intellicar.io/api/v1/login/gsso/signin",
-      onSuccess: (data) => {
-        if (data?.data?.userprofile) {
-          dispatch(setUser(data.data.userprofile));
-          navigate("/", { replace: true });
-          setLoading(false);
-        } else {
-          navigate("/login", { replace: true });
-          setLoading(false);
-        }
-      },
-      onError: (err) => {
-        console.error("Google login error:", err);
+  >({
+    path: "/login/gsso/signin",
+    onSuccess: (data) => {
+      if (data?.data?.userprofile) {
+        dispatch(setUser(data.data.userprofile));
+        navigate("/", { replace: true });
         setLoading(false);
+      } else {
         navigate("/login", { replace: true });
-      },
+        setLoading(false);
+      }
     },
-  );
+    onError: (err) => {
+      console.error("Google login error:", err);
+      setLoading(false);
+      navigate("/login", { replace: true });
+    },
+  });
 
   useLayoutEffect(() => {
     if (localStorage.getItem("code_verifier")) {
